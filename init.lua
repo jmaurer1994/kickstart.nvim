@@ -102,7 +102,7 @@ vim.g.have_nerd_font = false
 vim.opt.number = true
 -- You can also add relative line numbers, to help with jumping.
 --  Experiment for yourself to see if you like it!
--- vim.opt.relativenumber = true
+vim.opt.relativenumber = true
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.mouse = 'a'
@@ -114,6 +114,11 @@ vim.opt.showmode = false
 --  Remove this option if you want your OS clipboard to remain independent.
 --  See `:help 'clipboard'`
 vim.opt.clipboard = 'unnamedplus'
+
+vim.opt.tabstop = 4
+vim.opt.softtabstop = 4
+vim.opt.shiftwidth = 4
+vim.opt.expandtab = true
 
 -- Enable break indent
 vim.opt.breakindent = true
@@ -154,6 +159,7 @@ vim.opt.cursorline = true
 -- Minimal number of screen lines to keep above and below the cursor.
 vim.opt.scrolloff = 10
 
+vim.opt.colorcolumn = '80'
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
@@ -226,7 +232,7 @@ vim.opt.rtp:prepend(lazypath)
 -- NOTE: Here is where you install your plugins.
 require('lazy').setup({
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
-  'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
+  --'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
 
   -- NOTE: Plugins can also be added by using a table,
   -- with the first argument being the link and the following
@@ -256,6 +262,38 @@ require('lazy').setup({
         changedelete = { text = '~' },
       },
     },
+  },
+
+  {
+    'ThePrimeagen/harpoon',
+    branch = 'harpoon2',
+    dependencies = { 'nvim-lua/plenary.nvim' },
+    config = function()
+      local harpoon = require 'harpoon'
+
+      harpoon:setup {}
+
+      vim.keymap.set('n', '<leader>a', function()
+        harpoon:list():add()
+      end, { desc = 'Harpoon: Append current file' })
+      vim.keymap.set('n', '<C-e>', function()
+        harpoon.ui:toggle_quick_menu(harpoon:list())
+      end, { desc = 'Harpoon: Show mark list' })
+
+      -- Only gigachads use Dvorak (TODO: Try Dvorak or Colemak)
+      vim.keymap.set('n', '<C-a>', function()
+        harpoon:list():select(1)
+      end, { desc = 'Harpoon: Jump to mark 1' })
+      vim.keymap.set('n', '<C-s>', function()
+        harpoon:list():select(2)
+      end, { desc = 'Harpoon: Jump to mark 2' })
+      vim.keymap.set('n', '<C-d>', function()
+        harpoon:list():select(3)
+      end, { desc = 'Harpoon: Jump to mark 3' })
+      vim.keymap.set('n', '<C-f>', function()
+        harpoon:list():select(4)
+      end, { desc = 'Harpoon: Jump to mark 4' })
+    end,
   },
 
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.

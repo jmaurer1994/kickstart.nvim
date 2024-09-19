@@ -196,6 +196,20 @@ vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right win
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
 
+local templ_format = function()
+  local bufnr = vim.api.nvim_get_current_buf()
+  local filename = vim.api.nvim_buf_get_name(bufnr)
+  local cmd = 'templ fmt ' .. vim.fn.shellescape(filename)
+
+  vim.fn.jobstart(cmd, {
+    on_exit = function()
+      -- Reload the buffer only if it's still the current buffer
+      if vim.api.nvim_get_current_buf() == bufnr then
+        vim.cmd 'e!'
+      end
+    end,
+  })
+end
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
 
@@ -209,7 +223,7 @@ vim.api.nvim_create_autocmd('TextYankPost', {
     vim.highlight.on_yank()
   end,
 })
-
+vim.api.nvim_create_autocmd({ 'BufWritePre' }, { pattern = { '*.templ' }, callback = templ_format })
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
@@ -281,16 +295,16 @@ require('lazy').setup({
       end, { desc = 'Harpoon: Show mark list' })
 
       -- Only gigachads use Dvorak (TODO: Try Dvorak or Colemak)
-      vim.keymap.set('n', '<C-a>', function()
+      vim.keymap.set('n', '<C-h>', function()
         harpoon:list():select(1)
       end, { desc = 'Harpoon: Jump to mark 1' })
-      vim.keymap.set('n', '<C-s>', function()
+      vim.keymap.set('n', '<C-j>', function()
         harpoon:list():select(2)
       end, { desc = 'Harpoon: Jump to mark 2' })
-      vim.keymap.set('n', '<C-d>', function()
+      vim.keymap.set('n', '<C-k>', function()
         harpoon:list():select(3)
       end, { desc = 'Harpoon: Jump to mark 3' })
-      vim.keymap.set('n', '<C-f>', function()
+      vim.keymap.set('n', '<C-l>', function()
         harpoon:list():select(4)
       end, { desc = 'Harpoon: Jump to mark 4' })
     end,
@@ -318,19 +332,24 @@ require('lazy').setup({
       require('which-key').setup()
 
       -- Document existing key chains
-      require('which-key').register {
-        ['<leader>c'] = { name = '[C]ode', _ = 'which_key_ignore' },
-        ['<leader>d'] = { name = '[D]ocument', _ = 'which_key_ignore' },
-        ['<leader>r'] = { name = '[R]ename', _ = 'which_key_ignore' },
-        ['<leader>s'] = { name = '[S]earch', _ = 'which_key_ignore' },
-        ['<leader>w'] = { name = '[W]orkspace', _ = 'which_key_ignore' },
-        ['<leader>t'] = { name = '[T]oggle', _ = 'which_key_ignore' },
-        ['<leader>h'] = { name = 'Git [H]unk', _ = 'which_key_ignore' },
+      require('which-key').add {
+        { '<leader>c', group = '[C]ode' },
+        { '<leader>c_', hidden = true },
+        { '<leader>d', group = '[D]ocument' },
+        { '<leader>d_', hidden = true },
+        { '<leader>h', group = 'Git [H]unk' },
+        { '<leader>h_', hidden = true },
+        { '<leader>r', group = '[R]ename' },
+        { '<leader>r_', hidden = true },
+        { '<leader>s', group = '[S]earch' },
+        { '<leader>s_', hidden = true },
+        { '<leader>t', group = '[T]oggle' },
+        { '<leader>t_', hidden = true },
+        { '<leader>w', group = '[W]orkspace' },
+        { '<leader>w_', hidden = true },
       }
       -- visual mode
-      require('which-key').register({
-        ['<leader>h'] = { 'Git [H]unk' },
-      }, { mode = 'v' })
+      require('which-key').add { '<leader>h', desc = 'Git [H]unk', mode = 'v' }
     end,
   },
 
@@ -602,6 +621,7 @@ require('lazy').setup({
       --  - capabilities (table): Override fields in capabilities. Can be used to disable certain LSP features.
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
+      --
       local servers = {
         -- clangd = {},
         -- gopls = {},
@@ -629,6 +649,29 @@ require('lazy').setup({
               -- diagnostics = { disable = { 'missing-fields' } },
             },
           },
+        },
+        templ = {
+          capabilities = capabilities,
+        },
+
+        tailwindcss = {
+          capabilities = capabilities,
+          filetypes = { 'templ', 'astro', 'javascript', 'typescript', 'react' },
+          init_options = { userLanguages = { templ = 'html' } },
+        },
+
+        html = {
+          capabilities = capabilities,
+          on_attach = function(client, bufnr)
+            client.server_capabilities.documentFormattingProvider = false
+            client.server_capabilities.documentRangeFormattingProvider = false
+          end,
+          filetypes = { 'html', 'templ' },
+        },
+
+        htmx = {
+          capabilities = capabilities,
+          filetypes = { 'html', 'templ' },
         },
       }
 
@@ -872,8 +915,9 @@ require('lazy').setup({
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
+
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'vim', 'vimdoc' },
+      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'vim', 'vimdoc', 'templ' },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
